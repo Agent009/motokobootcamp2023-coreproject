@@ -65,7 +65,7 @@ const { canisterIds, network } = initCanisterIds();
 const UNDEFINED_CANISTER_IDS = {
   "process.env.INTERNET_IDENTITY_CANISTER_ID": "undefined",
   "process.env.BACKEND_CANISTER_ID": "undefined",
-  "process.env.FRONTEND_CANISTER_ID": "undefined"
+  "process.env.INTERFACE_CANISTER_ID": "undefined"
 }
 
 function serve() {

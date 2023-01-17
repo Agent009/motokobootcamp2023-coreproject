@@ -4,15 +4,19 @@
       "main": "src/backend/main.mo",
       "type": "motoko"
     },
-    "frontend": {
+    "webpage": {
+      "main": "src/webpage/main.mo",
+      "type": "motoko"
+    },
+    "interface": {
       "dependencies": [
-        "backend"
+        "backend", "webpage"
       ],
       "frontend": {
-        "entrypoint": "src/frontend/public/index.html"
+        "entrypoint": "src/interface/public/index.html"
       },
       "source": [
-        "src/frontend/public"
+        "src/interface/public"
       ],
       "type": "assets"
     }
