@@ -1,0 +1,20 @@
+{
+  "name": "motoko-bc-2023-core-project-dao",
+  "version": "0.1.0",
+  "description": "Motoko Bootcamp 2023 - Core Project - DAO",
+  "author": "Mohammad Amir <amir@connextar.com>"
+  "keywords": [
+    "Internet Computer",
+    "Motoko",
+    "Svelte",
+    "Canister",
+    "Internet Identity"
+  ],
+  "scripts": {
+    "build": "cd src/frontend && npm run build",
+    "prebuild": "npm run copy:types",
+    "dev": "cd src/frontend && npm run dev",
+    "prestart": "npm run copy:types",
+    "copy:types": "rsync -avr .dfx/$(echo ${DFX_NETWORK:-'**'})/canisters/** --exclude='assets' --exclude='idl/' --exclude='*.wasm' --delete src/declarations"
+  }
+}
