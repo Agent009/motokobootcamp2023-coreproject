@@ -2,6 +2,12 @@
 
 A DAO to control the text on a webpage through proposals.
 
+Contains three canisters:
+
+1. A `backend` canister (Motoko) for managing the logic of the DAO.
+2. A `webpage` canister (Motoko) for storing the webpage that the DAO will control.
+3. A interface canister (Svelte) (folder called `frontend`) for the user-friendly interface of the DAO.
+
 On-chain UI: TBD
 
 ## Running the project locally
@@ -16,6 +22,10 @@ export RUST_BACKTRACE=full
 dfx start --clean --background
 
 # Deploys the canisters to the replica and generates the candid interface
+dfx build backend
+dfx deploy backend
+dfx build webpage
+dfx deploy webpage
 dfx deploy
 ```
 
@@ -24,7 +34,7 @@ Once the job completes, the application will be available at `http://localhost:4
 Additionally, if you are making frontend changes, you can start a development server with
 
 ```bash
-npm start
+npm run dev
 ```
 
 Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
