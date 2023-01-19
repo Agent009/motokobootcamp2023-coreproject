@@ -4,7 +4,7 @@ A DAO to control the text on a webpage through proposals.
 
 Contains three canisters:
 
-1. A `backend` canister (Motoko) for managing the logic of the DAO.
+1. A `dao` canister (Motoko) for managing the logic of the DAO.
 2. A `webpage` canister (Motoko) for storing the webpage that the DAO will control.
 3. A interface canister (Svelte) (folder called `frontend`) for the user-friendly interface of the DAO.
 
@@ -22,8 +22,8 @@ export RUST_BACKTRACE=full
 dfx start --clean --background
 
 # Deploys the canisters to the replica and generates the candid interface
-dfx build backend
-dfx deploy backend
+dfx build dao
+dfx deploy dao
 dfx build webpage
 dfx deploy webpage
 dfx deploy

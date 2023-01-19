@@ -1,7 +1,7 @@
 {
   "canisters": {
-    "backend": {
-      "main": "canisters/backend/main.mo",
+    "dao": {
+      "main": "canisters/dao/main.mo",
       "type": "motoko"
     },
     "webpage": {
@@ -10,7 +10,7 @@
     },
     "interface": {
       "dependencies": [
-        "backend", "webpage"
+        "dao", "webpage"
       ],
       "frontend": {
         "entrypoint": "dist/index.html"

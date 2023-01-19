@@ -2,21 +2,21 @@
   import { useCanister } from "@connect2ic/svelte"
 
   let count
-  const [backend, { loading }] = useCanister("backend")
+  const [dao, { loading }] = useCanister("dao")
 
-  const refreshbackend = async () => {
-    const freshCount = await $backend.getValue()
+  const refreshdao = async () => {
+    const freshCount = await $dao.getValue()
     count = freshCount
   }
 
   const increment = async () => {
-    await $backend.increment()
-    await refreshbackend()
+    await $dao.increment()
+    await refreshdao()
   }
 
   $: {
-    if (!$loading && $backend) {
-      refreshbackend()
+    if (!$loading && $dao) {
+      refreshdao()
     }
   }
 
