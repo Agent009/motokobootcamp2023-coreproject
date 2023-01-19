@@ -10,7 +10,9 @@
 </script>
 
 <div class="App">
-    <ConnectButton />
+    <div class="auth-section">
+        <ConnectButton />
+    </div>
   <div class="main">
     <Sidebar />
     {#if $view.current === $view.home}

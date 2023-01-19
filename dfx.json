@@ -1,11 +1,11 @@
 {
   "canisters": {
     "dao": {
-      "main": "canisters/dao/main.mo",
+      "main": "./src/dao/main.mo",
       "type": "motoko"
     },
     "webpage": {
-      "main": "canisters/webpage/main.mo",
+      "main": "./src/webpage/main.mo",
       "type": "motoko"
     },
     "interface": {

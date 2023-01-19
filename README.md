@@ -6,7 +6,7 @@ Contains three canisters:
 
 1. A `dao` canister (Motoko) for managing the logic of the DAO.
 2. A `webpage` canister (Motoko) for storing the webpage that the DAO will control.
-3. A interface canister (Svelte) (folder called `frontend`) for the user-friendly interface of the DAO.
+3. A interface canister (Svelte) (folder called `interface`) for the user-friendly interface of the DAO.
 
 On-chain UI: TBD
 
@@ -21,12 +21,25 @@ export RUST_BACKTRACE=full
 # Starts the replica, running in the background
 dfx start --clean --background
 
+# First time, canisters will need to be built.
+dfx canister create dao
+dfx canister create webpage
+
 # Deploys the canisters to the replica and generates the candid interface
 dfx build dao
 dfx deploy dao
 dfx build webpage
 dfx deploy webpage
+dfx generate dao
+dfx generate webpage
+dfx deploy inerface
 dfx deploy
+```
+
+OR run the following to do the whole lot in one command:
+
+```
+npm run dfx
 ```
 
 Once the job completes, the application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
