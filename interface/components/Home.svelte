@@ -1,10 +1,13 @@
 <script>
+  import * as webpage from "../../src/declarations/webpage"
   import { proposaltoVote } from "../stores.js"
   import { hasvoted } from "../stores.js"
   import mot from "../assets/mot.png"
   import dfinityLogo from "../assets/dfinity.svg"
   import { get } from "svelte/store"
-  import { daoActor, principal } from "../stores"
+  import { daoActor, webpageActor, principal } from "../stores"
+import { idlFactory as idlFactoryWebpage, HttpRequest } from "../../src/declarations/webpage"
+import { webpage as webActor } from "../../src/declarations/webpage/index.js"
 
   let choosenproposal = ""
   let choosenvote = ""
@@ -37,9 +40,27 @@
       )
     }
   }
+  async function get_webpage(url) {
+    webActor.http_request(new webActor.HttpRequest("/", "GET"))
+    let webpage_actor = get(webpageActor)
+
+    if (!webpage_actor) {
+      return
+    }
+    ;
+    let res = await webpage_actor.http_request(idlFactoryWebpage.HttpRequest("/", "GET"))
+    if (res.length !== 0) {
+      return res[0]
+    } else {
+      throw new Error(
+        "Could not load webpage",
+      )
+    }
+  }
 
   let promise = vote(voteid, choosenvote)
   let promise2 = get_proposal(id)
+  let promise3 = get_webpage("/")
 
   function handleVoteClick(payload) {
     choosenvote = payload
@@ -65,6 +86,15 @@
 <div class="votemain">
   {#if $principal}
     <img src={mot} class="bg" alt="logo" />
+    {#await promise3}
+      <h1 class="slogan">Loading...</h1>
+    {:then res}
+      <div class="webpage">
+        {promise3}
+      </div>
+      {:catch error}
+        <p style="color: red">{error.message}</p>
+      {/await}
     {#if $proposaltoVote.proposalID === "null"}
       <h1 class="slogan">Please input a proposal ID!</h1>
       <input
@@ -108,7 +138,7 @@
       {/await}
     {/if}
   {:else}
-    <img src={dfinityLogo} class="bg App-logo" alt="logo" />
+    <img src={dfinityLogo} class="App-logo" alt="logo" />
     <p class="example-disabled">Connect with a wallet to access this example</p>
   {/if}
 </div>
@@ -126,13 +156,6 @@
 
   .bg {
     height: 55vmin;
-    animation: pulse 3s infinite;
-  }
-
-  .App-logo {
-    height: 14vmin;
-    pointer-events: none;
-    transform: scale(1);
     animation: pulse 3s infinite;
   }
 

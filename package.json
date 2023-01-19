@@ -4,6 +4,8 @@
   "scripts": {
     "dev": "vite",
     "dfx": "dfx build dao && dfx deploy dao && dfx build webpage && dfx deploy webpage && dfx generate dao && dfx generate webpage && dfx deploy",
+    "webpage": "dfx build webpage && dfx deploy webpage && dfx generate webpage",
+    "interface": "dfx deploy interface",
     "build": "vite build",
     "serve": "vite preview"
   },

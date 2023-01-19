@@ -24,10 +24,10 @@
 <nav class:expanded={isExpanded} on:mouseover={() => mouseover()}>
   <ul>
     {#if isExpanded}
-      <li on:click={() => handleHome()}>🏠 Home</li>
-      <li on:click={() => handleView()}>🚀 View</li>
-      <li on:click={() => handleCreate()}>⭐️ Create</li>
-      <li on:click={() => handleVote()}>🗑 Vote</li>
+      <li on:click={() => handleHome()} role="button">🏠 Home</li>
+      <li on:click={() => handleView()} role="button">🚀 View</li>
+      <li on:click={() => handleCreate()} role="button">⭐️ Create</li>
+      <li on:click={() => handleVote()} role="button">🗑 Vote</li>
     {/if}
   </ul>
 </nav>

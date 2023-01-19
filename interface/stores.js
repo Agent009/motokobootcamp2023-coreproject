@@ -15,3 +15,4 @@ export const proposaltoVote = writable({
 export const hasvoted = writable(false);
 export const principal = writable(null);
 export const daoActor = writable(null);
+export const webpageActor = writable(null);
