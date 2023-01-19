@@ -1,13 +1,15 @@
 <script>
-  import * as webpage from "../../src/declarations/webpage"
+  import { decodeUtf8 } from "../lib.js"
   import { proposaltoVote } from "../stores.js"
   import { hasvoted } from "../stores.js"
   import mot from "../assets/mot.png"
   import dfinityLogo from "../assets/dfinity.svg"
   import { get } from "svelte/store"
-  import { daoActor, webpageActor, principal } from "../stores"
-import { idlFactory as idlFactoryWebpage, HttpRequest } from "../../src/declarations/webpage"
-import { webpage as webActor } from "../../src/declarations/webpage/index.js"
+  import { daoActor, principal } from "../stores"
+  import {
+    webpage as webActor,
+    idlFactory,
+  } from "../../src/declarations/webpage"
 
   let choosenproposal = ""
   let choosenvote = ""
@@ -40,27 +42,33 @@ import { webpage as webActor } from "../../src/declarations/webpage/index.js"
       )
     }
   }
-  async function get_webpage(url) {
-    webActor.http_request(new webActor.HttpRequest("/", "GET"))
-    let webpage_actor = get(webpageActor)
+  async function get_webpage(url, method) {
+    //let webpage_actor = get(webpageActor)
 
-    if (!webpage_actor) {
+    if (!webActor) {
       return
     }
-    ;
-    let res = await webpage_actor.http_request(idlFactoryWebpage.HttpRequest("/", "GET"))
-    if (res.length !== 0) {
-      return res[0]
+    let headers = (idlFactory.Vec = [])
+    let body = (idlFactory.Vec = [])
+    let httpRequest = (idlFactory.Record = {
+      url: url,
+      method: method,
+      body: body,
+      headers: headers,
+    })
+    // {url: url, method: method, body: {}, headers: {}}
+    let res = await webActor.http_request(httpRequest)
+    console.log(typeof res === undefined, res.status_code, decodeUtf8(res.body), res)
+    if (typeof res !== undefined && res.status_code === 200) {
+      return decodeUtf8(res.body)
     } else {
-      throw new Error(
-        "Could not load webpage",
-      )
+      throw new Error("Could not load webpage")
     }
   }
 
   let promise = vote(voteid, choosenvote)
   let promise2 = get_proposal(id)
-  let promise3 = get_webpage("/")
+  let promise3 = get_webpage("/", "GET")
 
   function handleVoteClick(payload) {
     choosenvote = payload
@@ -84,17 +92,18 @@ import { webpage as webActor } from "../../src/declarations/webpage/index.js"
 </script>
 
 <div class="votemain">
+  {#await promise3}
+    <h1 class="slogan">Loading...</h1>
+  {:then res3}
+    <div class="webpage">
+      {res3}
+    </div>
+  {:catch error}
+    <p style="color: red">{error.message}</p>
+  {/await}
+
   {#if $principal}
     <img src={mot} class="bg" alt="logo" />
-    {#await promise3}
-      <h1 class="slogan">Loading...</h1>
-    {:then res}
-      <div class="webpage">
-        {promise3}
-      </div>
-      {:catch error}
-        <p style="color: red">{error.message}</p>
-      {/await}
     {#if $proposaltoVote.proposalID === "null"}
       <h1 class="slogan">Please input a proposal ID!</h1>
       <input
