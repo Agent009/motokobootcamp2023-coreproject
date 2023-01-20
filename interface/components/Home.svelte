@@ -1,39 +1,54 @@
 <script>
+  import { onMount, beforeUpdate, afterUpdate } from "svelte"
+  import {
+    isAuthenticated,
+    accountId,
+    principal,
+    authSessionData,
+    daoActor,
+    webpageActor,
+  } from "../stores"
   import { decodeUtf8 } from "../lib.js"
-  import { proposaltoVote } from "../stores.js"
-  import { hasvoted } from "../stores.js"
+  import { proposalToVote } from "../stores.js"
+  import { hasVoted } from "../stores.js"
   import mot from "../assets/mot.png"
   import dfinityLogo from "../assets/dfinity.svg"
   import { get } from "svelte/store"
-  import { daoActor, principal } from "../stores"
   import {
-    webpage as webActor,
+    webpage as insecureWebActor,
     idlFactory,
   } from "../../src/declarations/webpage"
 
-  let choosenproposal = ""
-  let choosenvote = ""
-  let voteid = ""
+  let chosenProposal = ""
+  let chosenVote = ""
+  let voteId = ""
   let id = ""
+  let usingInsecureWebpageAgent = true
 
   async function vote(thisid, votepayload) {
     let dao = get(daoActor)
+
     if (!dao) {
       return
     }
     let res = await dao.vote(BigInt(thisid), votepayload)
+
     if (res.Ok) {
       return res.Ok
     } else {
       throw new Error(res.Err)
     }
   }
+
   async function get_proposal(thisid) {
     let dao = get(daoActor)
+
     if (!dao) {
       return
     }
+
     let res = await dao.get_proposal(BigInt(thisid))
+
     if (res.length !== 0) {
       return res[0]
     } else {
@@ -42,12 +57,24 @@
       )
     }
   }
-  async function get_webpage(url, method) {
-    //let webpage_actor = get(webpageActor)
 
-    if (!webActor) {
+  async function get_webpage(url, method) {
+    let webpage = get(webpageActor)
+
+    if (!$isAuthenticated || !webpage) {
+      usingInsecureWebpageAgent = true
+      webpage = insecureWebActor
+      console.log("Could not use secure webpage agent")
+    } else {
+      console.log("Using secure webpage agent")
+      usingInsecureWebpageAgent = false
+    }
+
+    if (!webpage) {
+      console.log("Could not use insecure webpage agent either")
       return
     }
+
     let headers = (idlFactory.Vec = [])
     let body = (idlFactory.Vec = [])
     let httpRequest = (idlFactory.Record = {
@@ -56,75 +83,94 @@
       body: body,
       headers: headers,
     })
-    // {url: url, method: method, body: {}, headers: {}}
-    let res = await webActor.http_request(httpRequest)
-    console.log(typeof res === undefined, res.status_code, decodeUtf8(res.body), res)
+
+    let res = await webpage.http_request(httpRequest)
+    // console.log(typeof res === undefined, res.status_code, decodeUtf8(res.body), res)
+
     if (typeof res !== undefined && res.status_code === 200) {
       return decodeUtf8(res.body)
     } else {
-      throw new Error("Could not load webpage")
+      throw new Error("Could not load webpage contents.")
     }
   }
 
-  let promise = vote(voteid, choosenvote)
-  let promise2 = get_proposal(id)
-  let promise3 = get_webpage("/", "GET")
+  let votePromise = vote(voteId, chosenVote)
+  let getProposalPromise = get_proposal(id)
+  let getWebpageContentsPromise = get_webpage("/", "GET")
 
   function handleVoteClick(payload) {
-    choosenvote = payload
-    voteid = id
-    promise = vote(voteid, choosenvote)
-    $hasvoted = true
+    chosenVote = payload
+    voteId = id
+    votePromise = vote(voteId, chosenVote)
+    $hasVoted = true
   }
 
   function handleProposalCheck(payload) {
     id = payload
-    promise2 = get_proposal(id)
+    getProposalPromise = get_proposal(id)
   }
 
   //I assume the vote Yes/No will be represented as True/False
   function setProposal(x) {
-    $proposaltoVote.proposalID = x
+    $proposalToVote.proposalID = x
+
     if (x != "null") {
       handleProposalCheck(x)
     }
   }
+
+  onMount(async () => {
+    console.log("Home -> onMount");
+	});
+
+  beforeUpdate(() => {
+		console.log("Home -> beforeUpdate - isAuthenticated", $isAuthenticated);
+	});
+
+	afterUpdate(() => {
+		console.log("Home -> afterUpdate - isAuthenticated", $isAuthenticated);
+	});
 </script>
 
 <div class="votemain">
-  {#await promise3}
+  {#await getWebpageContentsPromise}
     <h1 class="slogan">Loading...</h1>
   {:then res3}
     <div class="webpage">
+      <h3>
+        Current Webpage Contents ({usingInsecureWebpageAgent
+          ? "From Insecure Actor"
+          : "From Secure Actor"})
+      </h3>
       {res3}
     </div>
   {:catch error}
     <p style="color: red">{error.message}</p>
   {/await}
 
-  {#if $principal}
+  {#if $isAuthenticated}
     <img src={mot} class="bg" alt="logo" />
-    {#if $proposaltoVote.proposalID === "null"}
+    {#if $proposalToVote.proposalID === "null"}
       <h1 class="slogan">Please input a proposal ID!</h1>
       <input
-        bind:value={choosenproposal}
+        bind:value={chosenProposal}
         placeholder="Input your proposal ID here"
       />
-      <button on:click={setProposal(choosenproposal)}>Vote!</button>
-    {:else if $proposaltoVote.proposalID != "null"}
-      {#await promise2}
+      <button on:click={setProposal(chosenProposal)}>Vote!</button>
+    {:else if $proposalToVote.proposalID != "null"}
+      {#await getProposalPromise}
         <h1 class="slogan">Loading...</h1>
       {:then res}
         <div class="votingdiv">
           <h1 class="slogan">
-            You are voting on proposal ID: {$proposaltoVote.proposalID}
+            You are voting on proposal ID: {$proposalToVote.proposalID}
           </h1>
           <div>
             <h1 class="slogan">Cast your vote:</h1>
             <button on:click={() => handleVoteClick(true)}>Yes</button>
             <button on:click={() => handleVoteClick(false)}>No</button>
-            {#if $hasvoted === true}
-              {#await promise}
+            {#if $hasVoted === true}
+              {#await votePromise}
                 <h1 class="slogan">Loading...</h1>
               {:then res2}
                 <p style="color: white">
@@ -153,6 +199,14 @@
 </div>
 
 <style>
+  .webpage {
+    background: white;
+    color: black;
+    border: 1px solid black;
+    padding: 20px;
+    margin: 20px auto;
+    display: block;
+  }
   input {
     width: 100%;
     padding: 12px 20px;

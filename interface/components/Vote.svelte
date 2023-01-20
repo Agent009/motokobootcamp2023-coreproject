@@ -1,6 +1,6 @@
 <script>
-  import { proposaltoVote } from "../stores.js"
-  import { hasvoted } from "../stores.js"
+  import { proposalToVote } from "../stores.js"
+  import { hasVoted } from "../stores.js"
   import mot from "../assets/mot.png"
   import dfinityLogo from "../assets/dfinity.svg"
   import { get } from "svelte/store"
@@ -45,7 +45,7 @@
     choosenvote = payload
     voteid = id
     promise = vote(voteid, choosenvote)
-    $hasvoted = true
+    $hasVoted = true
   }
 
   function handleProposalCheck(payload) {
@@ -55,7 +55,7 @@
 
   //I assume the vote Yes/No will be represented as True/False
   function setProposal(x) {
-    $proposaltoVote.proposalID = x
+    $proposalToVote.proposalID = x
     if (x != "null") {
       handleProposalCheck(x)
     }
@@ -65,26 +65,26 @@
 <div class="votemain">
   {#if $principal}
     <img src={mot} class="bg" alt="logo" />
-    {#if $proposaltoVote.proposalID === "null"}
+    {#if $proposalToVote.proposalID === "null"}
       <h1 class="slogan">Please input a proposal ID!</h1>
       <input
         bind:value={choosenproposal}
         placeholder="Input your proposal ID here"
       />
       <button on:click={setProposal(choosenproposal)}>Vote!</button>
-    {:else if $proposaltoVote.proposalID != "null"}
+    {:else if $proposalToVote.proposalID != "null"}
       {#await promise2}
         <h1 class="slogan">Loading...</h1>
       {:then res}
         <div class="votingdiv">
           <h1 class="slogan">
-            You are voting on proposal ID: {$proposaltoVote.proposalID}
+            You are voting on proposal ID: {$proposalToVote.proposalID}
           </h1>
           <div>
             <h1 class="slogan">Cast your vote:</h1>
             <button on:click={() => handleVoteClick(true)}>Yes</button>
             <button on:click={() => handleVoteClick(false)}>No</button>
-            {#if $hasvoted === true}
+            {#if $hasVoted === true}
               {#await promise}
                 <h1 class="slogan">Loading...</h1>
               {:then res2}

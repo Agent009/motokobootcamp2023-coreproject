@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "vite",
-    "dfx": "dfx build dao && dfx deploy dao && dfx build webpage && dfx deploy webpage && dfx generate dao && dfx generate webpage && dfx deploy",
-    "webpage": "dfx build webpage && dfx deploy webpage && dfx generate webpage",
+    "create": "dfx canister create dao && dfx canister create webpage && dfx canister create interface",
+    "backend": "dfx build dao && dfx deploy dao && dfx build webpage && dfx deploy webpage && dfx generate dao && dfx generate webpage",
     "interface": "dfx deploy interface",
     "build": "vite build",
     "serve": "vite preview"

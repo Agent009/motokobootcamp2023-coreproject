@@ -21,25 +21,15 @@ export RUST_BACKTRACE=full
 # Starts the replica, running in the background
 dfx start --clean --background
 
-# First time, canisters will need to be built.
-dfx canister create dao
-dfx canister create webpage
+# First time, canisters will need to be created, built and the back-end deployed and the declarations generated.
+npm run create
+npm run backend
+
+# Then, the interface can be deployed
+npm run interface
 
 # Deploys the canisters to the replica and generates the candid interface
-dfx build dao
-dfx deploy dao
-dfx build webpage
-dfx deploy webpage
-dfx generate dao
-dfx generate webpage
-dfx deploy inerface
 dfx deploy
-```
-
-OR run the following to do the whole lot in one command:
-
-```
-npm run dfx
 ```
 
 Once the job completes, the application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.

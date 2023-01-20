@@ -1,18 +1,42 @@
 <script>
+  import { onMount, beforeUpdate, afterUpdate } from "svelte"
   import * as dao from "../src/declarations/dao"
+  import { verifyConnectionAndAgent } from "./auth"
+  import {
+    isAuthenticated,
+    accountId,
+    principal,
+    authSessionData,
+    daoActor,
+    webpageActor,
+    view,
+  } from "./stores"
   import Sidebar from "./components/Sidebar.svelte"
   import ConnectButton from "./components/shared/ConnectButton.svelte"
-  import { view } from "./stores.js"
   import Home from "./components/Home.svelte"
   import Vote from "./components/Vote.svelte"
   import View from "./components/View.svelte"
   import Create from "./components/Create.svelte"
+
+  /*onMount(async () => {
+    console.log("App onMount");
+		const res = await verifyConnectionAndAgent();
+    console.log("App -> verifyConnectionAndAgent -> res", res);
+	});*/
+
+  beforeUpdate(() => {
+    console.log("App -> beforeUpdate - isAuthenticated", $isAuthenticated)
+  })
+
+  afterUpdate(() => {
+    console.log("App -> afterUpdate - isAuthenticated", $isAuthenticated)
+  })
 </script>
 
 <div class="App">
-    <div class="auth-section">
-        <ConnectButton />
-    </div>
+  <div class="auth-section">
+    <ConnectButton />
+  </div>
   <div class="main">
     <Sidebar />
     {#if $view.current === $view.home}
@@ -29,7 +53,7 @@
 
   <footer>
     <p class="twitterfoot">
-      by <a href="https://twitter.com/iriasviel">Iri</a>
+      by <a href="https://twitter.com/">Moi</a>
     </p>
   </footer>
 </div>
@@ -149,8 +173,8 @@
     align-items: center;
     text-align: right;
     position: fixed;
-    top: 0;
-    right: 0;
+    top: 15px;
+    right: 15px;
     background-color: #4c4a4a;
     border-radius: 50px;
     border: 2px solid rgb(222, 221, 221);
