@@ -6,7 +6,8 @@ Contains three canisters:
 
 1. A `dao` canister (Motoko) for managing the logic of the DAO.
 2. A `webpage` canister (Motoko) for storing the webpage that the DAO will control.
-3. A interface canister (Svelte) (folder called `interface`) for the user-friendly interface of the DAO.
+3. A `ledger` canister (Motoko) for storing transactions and balances.
+4. A interface canister (Svelte) (folder called `interface`) for the user-friendly interface of the DAO.
 
 On-chain UI: TBD
 
@@ -24,9 +25,7 @@ dfx start --clean --background
 # First time, canisters will need to be created, built and the back-end deployed and the declarations generated.
 npm run create
 npm run backend
-
-# Then, the interface can be deployed
-npm run interface
+npm run deploy
 
 # Deploys the canisters to the replica and generates the candid interface
 dfx deploy

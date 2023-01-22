@@ -1,4 +1,5 @@
 <script>
+  import { onMount, beforeUpdate, afterUpdate } from "svelte"
   import { proposalToVote } from "../stores.js"
   import { hasVoted } from "../stores.js"
   import mot from "../assets/mot.png"
@@ -6,29 +7,50 @@
   import { get } from "svelte/store"
   import { daoActor, principal } from "../stores"
 
-  let choosenproposal = ""
-  let choosenvote = ""
-  let voteid = ""
+  let chosenProposal = ""
+  let chosenVote = ""
+  let voteId = ""
   let id = ""
 
-  async function vote(thisid, votepayload) {
+  async function vote(thisID, votePayload) {
     let dao = get(daoActor)
+    let res
+
     if (!dao) {
       return
     }
-    let res = await dao.vote(BigInt(thisid), votepayload)
-    if (res.Ok) {
-      return res.Ok
-    } else {
-      throw new Error(res.Err)
-    }
+
+    await dao
+      .vote(BigInt(thisID), votePayload)
+      .then((response) => {
+        if (response.Ok) {
+          return response.Ok
+        } else {
+          throw new Error(rresponsees.Err)
+        }
+      })
+      .catch((error) => {
+        console.log("Error voting", thisID, votePayload, error)
+        throw new Error(error)
+      })
   }
-  async function get_proposal(thisid) {
+
+  async function get_proposal(thisID) {
     let dao = get(daoActor)
+
     if (!dao) {
       return
     }
-    let res = await dao.get_proposal(BigInt(thisid))
+
+    let res
+
+    try {
+      res = await dao.get_proposal(BigInt(thisID))
+    } catch (error) {
+      console.log("Error getting proposal", thisID, error)
+      throw new Error(error)
+    }
+
     if (res.length !== 0) {
       return res[0]
     } else {
@@ -38,28 +60,44 @@
     }
   }
 
-  let promise = vote(voteid, choosenvote)
-  let promise2 = get_proposal(id)
+  let votePromise
+  let getProposalPromise
 
   function handleVoteClick(payload) {
-    choosenvote = payload
-    voteid = id
-    promise = vote(voteid, choosenvote)
+    console.log("EVENT --- handleVoteClick", payload)
+    chosenVote = payload
+    voteId = id
+    votePromise = vote(voteId, chosenVote)
     $hasVoted = true
   }
 
   function handleProposalCheck(payload) {
+    console.log("EVENT --- handleProposalCheck", payload)
     id = payload
-    promise2 = get_proposal(id)
+    getProposalPromise = get_proposal(id)
   }
 
   //I assume the vote Yes/No will be represented as True/False
   function setProposal(x) {
+    console.log("EVENT --- setProposal", x)
     $proposalToVote.proposalID = x
+
     if (x != "null") {
       handleProposalCheck(x)
     }
   }
+
+  onMount(async () => {
+    console.log("Vote -> onMount")
+  })
+
+  beforeUpdate(() => {
+    console.log("Vote -> beforeUpdate")
+  })
+
+  afterUpdate(() => {
+    console.log("Vote -> afterUpdate")
+  })
 </script>
 
 <div class="votemain">
@@ -68,12 +106,12 @@
     {#if $proposalToVote.proposalID === "null"}
       <h1 class="slogan">Please input a proposal ID!</h1>
       <input
-        bind:value={choosenproposal}
+        bind:value={chosenProposal}
         placeholder="Input your proposal ID here"
       />
-      <button on:click={setProposal(choosenproposal)}>Vote!</button>
+      <button on:click={setProposal(chosenProposal)}>Vote!</button>
     {:else if $proposalToVote.proposalID != "null"}
-      {#await promise2}
+      {#await getProposalPromise}
         <h1 class="slogan">Loading...</h1>
       {:then res}
         <div class="votingdiv">
@@ -85,7 +123,7 @@
             <button on:click={() => handleVoteClick(true)}>Yes</button>
             <button on:click={() => handleVoteClick(false)}>No</button>
             {#if $hasVoted === true}
-              {#await promise}
+              {#await votePromise}
                 <h1 class="slogan">Loading...</h1>
               {:then res2}
                 <p style="color: white">
@@ -152,9 +190,5 @@
     font-size: 16px;
     margin: 4px 2px;
     cursor: pointer;
-  }
-
-  .delete {
-    background-color: white;
   }
 </style>

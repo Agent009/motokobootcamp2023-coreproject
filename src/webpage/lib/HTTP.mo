@@ -1,39 +1,53 @@
-
+import Blob "mo:base/Blob";
+import Text "mo:base/Text";
 
 module HTTP {
     public type HeaderField = (Text, Text);
 
     public type HttpRequest = {
-        body: Blob;
-        headers: [HeaderField];
-        method: Text;
-        url: Text;
+        body : Blob;
+        headers : [HeaderField];
+        method : Text;
+        url : Text
     };
 
     public type HttpResponse = {
-        body: Blob;
-        headers: [HeaderField];
-        status_code: Nat16;
-        streaming_strategy: ?StreamingStrategy;
+        body : Blob;
+        headers : [HeaderField];
+        status_code : Nat16;
+        streaming_strategy : ?StreamingStrategy
+    };
+
+    public type DecodedHttpRequest = {
+        body : Text; // body is Text now
+        headers : [HeaderField];
+        method: Text;
+        url : Text
+    };
+
+    public type DecodedHttpResponse = {
+        body : Text; // body is Text now
+        headers : [HeaderField];
+        status : Nat
     };
 
     public type StreamingStrategy = {
-        #Callback: {
+        #Callback : {
             callback : StreamingCallback;
-            token    : StreamingCallbackToken;
-        };
+            token : StreamingCallbackToken
+        }
     };
 
     public type StreamingCallback = query (StreamingCallbackToken) -> async (StreamingCallbackResponse);
 
-    public type StreamingCallbackToken =  {
+    public type StreamingCallbackToken = {
         content_encoding : Text;
-        index            : Nat;
-        key              : Text;
+        index : Nat;
+        key : Text
     };
 
     public type StreamingCallbackResponse = {
-        body  : Blob;
-        token : ?StreamingCallbackToken;
+        body : Blob;
+        token : ?StreamingCallbackToken
     };
 }

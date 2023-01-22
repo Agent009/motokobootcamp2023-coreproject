@@ -1,6 +1,6 @@
 export function encodeUtf8(text) {
 	const arr = [];
-	
+
 	for (const char of text) {
 		const codepoint = char.codePointAt(0);
 
@@ -8,32 +8,32 @@ export function encodeUtf8(text) {
 			arr.push(codepoint);
 			continue;
 		}
-		
+
 		if (codepoint < 2048) {
 			const num1 = 0b11000000 | (codepoint >> 6);
 			const num2 = 0b10000000 | (codepoint & 0b111111);
-			
+
 			arr.push(num1, num2);
 			continue;
 		}
-		
+
 		if (codepoint < 65536) {
 			const num1 = 0b11100000 | (codepoint >> 12);
 			const num2 = 0b10000000 | ((codepoint >> 6) & 0b111111);
 			const num3 = 0b10000000 | (codepoint & 0b111111);
-			
+
 			arr.push(num1, num2, num3);
 			continue;
 		}
-		
+
 		const num1 = 0b11110000 | (codepoint >> 18);
 		const num2 = 0b10000000 | ((codepoint >> 12) & 0b111111);
 		const num3 = 0b10000000 | ((codepoint >> 6) & 0b111111);
 		const num4 = 0b10000000 | (codepoint & 0b111111);
-		
+
 		arr.push(num1, num2, num3, num4);
 	}
-	
+
 	return arr;
 }
 
@@ -42,15 +42,15 @@ export function decodeUtf8(bytes) {
 
 	for (let i = 0; i < bytes.length; i++) {
 		const byte = bytes[i];
-		
+
 		if (!(byte & 0b10000000)) {
 			const char = String.fromCodePoint(byte);
 			arr.push(char);
 			continue;
 		}
-		
+
 		let codepoint, byteLen;
-		
+
 		if (byte >> 5 === 0b110) {
 			codepoint = 0b11111 & byte;
 			byteLen = 2;
@@ -70,11 +70,25 @@ export function decodeUtf8(bytes) {
 			const shift = 6 * (byteLen - j - 1);
 			codepoint |= num << shift;
 		}
-		
+
 		const char = String.fromCodePoint(codepoint)
 		arr.push(char);
 		i += byteLen - 1;
 	}
-	
+
 	return arr.join('');
+}
+
+/**
+ * Convert a string to a candid blob representation
+ * // In Chrome DevTools:
+ * 	const textBlob = new Blob(["Updated page title"], {type: 'text/plain'});
+ * 	const byteArray = await [...new Uint8Array(await textBlob.arrayBuffer())]
+ * 	byteArray
+ * @param {string} text The string to convert
+ * @returns {Uint8Array}
+ */
+export async function textToUnit8Array(text) {
+	const textBlob = new Blob([text], {type: 'text/plain'});
+    return [...new Uint8Array(await textBlob.arrayBuffer())];
 }

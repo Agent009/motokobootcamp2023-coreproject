@@ -1,24 +1,37 @@
 <script>
   import { onMount, beforeUpdate, afterUpdate } from 'svelte';
-  import { login, logout, verifyConnectionAndAgent } from "../../auth"
-  import { isAuthenticated } from "../../stores"
+  import { balance, login, logout, verifyConnectionAndAgent } from "../../auth"
+  import { isAuthenticated, accountId, principalId } from "../../stores"
 
   console.log("ConnectButton -> isAuthenticated:", $isAuthenticated);
   $: message = $isAuthenticated ? "Logout" : "Sign in"
   $: buttonAdditionalClass = $isAuthenticated ? "logout" : "";
+  // $: loggedInClass = $isAuthenticated ? "logged-in" : "";
+  // $: ourAccountID = $accountId ? $accountId : "___";
+  // $: ourPrincipalID = $principalId ? $principalId : "Anonymous";
+
+  /*async function getBalance(symbol) {
+    let response = await balance(symbol)
+
+    if (response) {
+      return response.amount
+    }
+  }
+
+  let icpBalance = getBalance('ICP');*/
 
   onMount(async () => {
-    console.log("ConnectButton -> onMount");
-		const res = await verifyConnectionAndAgent();
-    console.log("ConnectButton -> verifyConnectionAndAgent -> res", res, "isAuthenticated", $isAuthenticated);
+    // console.log("ConnectButton -> onMount");
+		// const res = await verifyConnectionAndAgent();
+    // console.log("ConnectButton -> verifyConnectionAndAgent -> res", res, "isAuthenticated", $isAuthenticated);
 	});
 
   beforeUpdate(() => {
-		console.log("ConnectButton -> beforeUpdate - isAuthenticated", $isAuthenticated);
+		// console.log("ConnectButton -> beforeUpdate - isAuthenticated", $isAuthenticated);
 	});
 
 	afterUpdate(() => {
-		console.log("ConnectButton -> afterUpdate - isAuthenticated", $isAuthenticated);
+		// console.log("ConnectButton -> afterUpdate - isAuthenticated", $isAuthenticated);
 	});
 </script>
 
@@ -28,14 +41,14 @@
 
 <style>
   .connect-button {
-    font-size: 18px;
-    background: rgb(35 35 39);
-    color: #fff;
+    background-color: #376e65;
+    color: #8cbbb4;
+    font-size: 1.5em;
     border: none;
+    border-radius:10px;
     padding: 10px 20px;
     display: flex;
     align-items: center;
-    border-radius: 40px;
     cursor: pointer;
   }
   .connect-button.logout {
@@ -44,7 +57,7 @@
   }
 
   .connect-button:hover {
-    transform: scale(1.1);
+    transform: scale(1.15);
     transition: all 0.4s;
   }
 </style>

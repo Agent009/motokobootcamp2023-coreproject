@@ -12,7 +12,7 @@
     view,
   } from "./stores"
   import Sidebar from "./components/Sidebar.svelte"
-  import ConnectButton from "./components/shared/ConnectButton.svelte"
+  import Header from "./components/shared/Header.svelte"
   import Home from "./components/Home.svelte"
   import Vote from "./components/Vote.svelte"
   import View from "./components/View.svelte"
@@ -34,10 +34,10 @@
 </script>
 
 <div class="App">
-  <div class="auth-section">
-    <ConnectButton />
-  </div>
-  <div class="main">
+  <header class="header">
+    <Header />
+  </header>
+  <main class="main">
     <Sidebar />
     {#if $view.current === $view.home}
       <Home />
@@ -49,8 +49,7 @@
       <Create />
     {/if}
     <div class="styling" />
-  </div>
-
+  </main>
   <footer>
     <p class="twitterfoot">
       by <a href="https://twitter.com/">Moi</a>
@@ -68,6 +67,14 @@
     -moz-osx-font-smoothing: grayscale;
     color: #424242;
     background-color: #262626;
+  }
+  .header {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
   }
   .styling {
     width: 5vmin;
@@ -166,19 +173,6 @@
     color: white;
     background: #979799;
   }
-  .auth-section {
-    padding: 0.4em;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    text-align: right;
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    background-color: #4c4a4a;
-    border-radius: 50px;
-    border: 2px solid rgb(222, 221, 221);
-  }
   @keyframes pulse {
     0% {
       transform: scale(0.97);
@@ -193,13 +187,58 @@
       opacity: 0;
     }
   }
-  .connexion {
-    margin: 40px auto;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    row-gap: 20px;
+  /**
+ * Correct font family set oddly in Safari 5 and Chrome.
+ */
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: monospace, serif;
+    font-size: 1em;
+  }
+
+  /**
+ * Improve readability of pre-formatted text in all browsers.
+ */
+  pre {
+    white-space: pre-wrap;
+  }
+  pre {
+    background-color: #f2f5f6;
+    padding: 3px;
+    border-top: 1px solid #d6d6d6;
+    border-bottom: 1px solid #d6d6d6;
+    font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console",
+      "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono",
+      "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier,
+      monospace;
+    line-height: 10px;
+    color: #444;
+    overflow: hidden;
+    overflow-y: hidden;
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+  pre code {
+    border: 0;
+    padding: 0;
+    line-height: 1.3;
+  }
+  code {
+    border-radius: 2px;
+    background-color: #d6d6d6;
+    border: 1px solid #b2b2b2;
+    display: inline-block;
+    padding: 0 5px;
+    line-height: inherit;
+    font-size: inherit;
+    color: inherit;
+    margin: 0 3px;
+    font-family: Consolas, "Andale Mono WT", "Andale Mono", "Lucida Console", "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Liberation Mono", "Nimbus Mono L", Monaco, "Courier New", Courier, monospace;
+    border-color: #eee;
+    background-color: #f2f5f6;
+    font-size: 12px;
+    line-height: 1.65em;
   }
 </style>

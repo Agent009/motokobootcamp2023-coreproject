@@ -25,29 +25,55 @@
   let id = ""
   let usingInsecureWebpageAgent = true
 
-  async function vote(thisid, votepayload) {
+  async function vote(thisID, votePayload) {
     let dao = get(daoActor)
+    let res
 
     if (!dao) {
       return
     }
-    let res = await dao.vote(BigInt(thisid), votepayload)
+
+    await dao.vote(BigInt(thisID), votePayload)
+    .then(response => {
+      if (response.Ok) {
+        return response.Ok
+      } else {
+        throw new Error(rresponsees.Err)
+      }
+    }).catch(error => {
+      console.log("Error voting", thisID, votePayload, error);
+      throw new Error(error)
+    })
+
+    /*try {
+      res = await dao.vote(BigInt(thisID), votePayload)
+    } catch (error) {
+      console.log("Error voting", thisID, votePayload, error);
+      throw new Error(error)
+    }
 
     if (res.Ok) {
       return res.Ok
     } else {
       throw new Error(res.Err)
-    }
+    }*/
   }
 
-  async function get_proposal(thisid) {
+  async function get_proposal(thisID) {
     let dao = get(daoActor)
 
     if (!dao) {
       return
     }
 
-    let res = await dao.get_proposal(BigInt(thisid))
+    let res;
+
+    try {
+      res = await dao.get_proposal(BigInt(thisID))
+    } catch (error) {
+      console.log("Error getting proposal", thisID, error);
+      throw new Error(error)
+    }
 
     if (res.length !== 0) {
       return res[0]
@@ -83,6 +109,7 @@
       body: body,
       headers: headers,
     })
+    console.log("httpRequest payload prepared.", httpRequest);
 
     let res = await webpage.http_request(httpRequest)
     // console.log(typeof res === undefined, res.status_code, decodeUtf8(res.body), res)
@@ -94,11 +121,14 @@
     }
   }
 
-  let votePromise = vote(voteId, chosenVote)
-  let getProposalPromise = get_proposal(id)
+  // let votePromise = vote(voteId, chosenVote)
+  // let getProposalPromise = get_proposal(id)
+  let votePromise
+  let getProposalPromise
   let getWebpageContentsPromise = get_webpage("/", "GET")
 
   function handleVoteClick(payload) {
+    console.log("EVENT --- handleVoteClick", payload)
     chosenVote = payload
     voteId = id
     votePromise = vote(voteId, chosenVote)
@@ -106,12 +136,14 @@
   }
 
   function handleProposalCheck(payload) {
+    console.log("EVENT --- handleProposalCheck", payload)
     id = payload
     getProposalPromise = get_proposal(id)
   }
 
   //I assume the vote Yes/No will be represented as True/False
   function setProposal(x) {
+    console.log("EVENT --- setProposal", x)
     $proposalToVote.proposalID = x
 
     if (x != "null") {

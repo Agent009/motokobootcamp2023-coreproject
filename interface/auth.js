@@ -9,10 +9,10 @@ import { AuthClient } from '@dfinity/auth-client';
 //TODO : Add mainnet canister ids when deployed on the IC
 const daoCanisterId = process.env.NODE_ENV === "development" ? "rrkah-fqaaa-aaaaa-aaaaq-cai" : "rvpd5-iqaaa-aaaaj-qazsa-cai"
 const webpageCanisterId = process.env.NODE_ENV === "development" ? "ryjl3-tyaaa-aaaaa-aaaba-cai" : "rvpd5-iqaaa-aaaaj-qazsa-cai"
-const HOST = process.env.NODE_ENV === "development" ? "http://localhost:3000/" : "";
+const HOST = process.env.NODE_ENV === "development" ? "http://localhost:3000/" : "https://ic0.app";
 const whitelist = [daoCanisterId, webpageCanisterId];
 
-export const isLoggedIn = await window.ic.plug.isConnected();
+// export const isLoggedIn = await window.ic.plug.isConnected();
 
 export const verifyConnectionAndAgent = async () => {
   const connected = await window.ic.plug.isConnected();
@@ -32,14 +32,33 @@ const onConnectionUpdate = () => {
 
 // See https://docs.plugwallet.ooo/
 // https://github.com/Psychedelic/plug-inpage-provider/blob/develop/src/Provider/index.ts
-export async function balance() {
+export async function balance(symbol) {
   console.log("Attempting to get balance:", principal)
   // (3) [{…}, {…}, {…}]
   // 0:  {symbol: 'ICP', canisterId: 'ryjl3-tyaaa-aaaaa-aaaba-cai', name: 'ICP', decimals: 8, standard: 'ROSETTA', …}
   // 1: {symbol: 'XTC', canisterId: 'aanaa-xaaaa-aaaah-aaeiq-cai', name: 'Cycles', decimals: 12, standard: 'XTC', …}
   // 2: {symbol: 'WICP', canisterId: 'utozz-siaaa-aaaam-qaaxq-cai', name: 'Wrapped ICP', decimals: 8, standard: 'WICP', …}
-  let balance = await window.ic.plug.requestBalance();
-  return balance;
+  try {
+    let balances = await window.ic.plug.requestBalance();
+
+    if (balances) {
+      console.log("Got balances: ", balances);
+
+      for (let i in balances) {
+        let entry = balances[i]
+        // console.log(entry);
+
+        if (entry.symbol === symbol) {
+          // console.log("For", symbol, "balance is", entry);
+          return entry
+        }
+      }
+    }
+  } catch (err) {
+    console.log("There was an error trying to fetch your balances. ", err);
+  }
+
+  return 0;
 }
 
 export async function logout() {
@@ -61,14 +80,31 @@ export async function login() {
 
   console.log(`The connected user's public key is:`, result);
   const p = await window.ic.plug.agent.getPrincipal()
-  const dao = await window.ic.plug.createActor({
+  const agent = new HttpAgent({
+    host: HOST,
+  });
+
+  if (process.env.NODE_ENV === "development") {
+    agent.fetchRootKey();
+  }
+
+  const dao = Actor.createActor(idlFactoryDAO, {
+    agent,
+    canisterId: daoCanisterId,
+  });
+  const webpage = Actor.createActor(idlFactoryWeb, {
+    agent,
+    canisterId: webpageCanisterId,
+  });
+
+  /*const dao = await window.ic.plug.createActor({
     canisterId: daoCanisterId,
     interfaceFactory: idlFactoryDAO,
   })
   const webpage = await window.ic.plug.createActor({
     canisterId: webpageCanisterId,
     interfaceFactory: idlFactoryWeb,
-  })
+  })*/
 
   isAuthenticated.set(() => true)
   accountId.update(() => window.ic.plug.accountId)
