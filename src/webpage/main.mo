@@ -58,6 +58,11 @@ shared ({ caller = creator }) actor class Webpage() = {
         decodeUtf8(input)
     };
 
+    // Remove the query parameters from the URL.
+    private func removeQuery(str: Text): Text {
+        return Option.unwrap(Text.split(str, #char '?').next());
+    };
+
     //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
     //  REGION:     UPDATING      CONTENT    ----------   ----------   ----------   ----------   ----------
     //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------

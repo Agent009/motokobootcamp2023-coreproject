@@ -45,6 +45,7 @@ module Types {
     public type Tokens = { amount_e8s : Nat };
     public type Account = { owner : Principal; tokens : Tokens };
     public type Subaccount = Blob;
+    public type AccountIdentifier = Blob;
     public type TransferArgs = {
         to : Principal;
         amount : Tokens;
