@@ -6,8 +6,8 @@ import { writable } from 'svelte/store'
 
 export const isDevelopmentEnv = process.env.NODE_ENV === "development";
 //TODO : Add mainnet canister ids when deployed on the IC
-export const daoCanisterId = isDevelopmentEnv ? "rrkah-fqaaa-aaaaa-aaaaq-cai" : "rvpd5-iqaaa-aaaaj-qazsa-cai"
-export const webpageCanisterId = isDevelopmentEnv ? "ryjl3-tyaaa-aaaaa-aaaba-cai" : "rvpd5-iqaaa-aaaaj-qazsa-cai"
+export const daoCanisterId = isDevelopmentEnv ? "rrkah-fqaaa-aaaaa-aaaaq-cai" : "6bcmp-xyaaa-aaaap-qa5mq-cai"
+export const webpageCanisterId = isDevelopmentEnv ? "ryjl3-tyaaa-aaaaa-aaaba-cai" : "6pabh-miaaa-aaaap-qa5nq-cai"
 export const HOST = isDevelopmentEnv ? "http://localhost:3000/" : "https://ic0.app";
 
 //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------

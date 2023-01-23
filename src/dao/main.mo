@@ -47,7 +47,8 @@ shared ({ caller = creator }) actor class DAO(init : ?Types.BasicDaoStableStorag
             }
         })
     } = actor ("db3eq-6iaaa-aaaah-abz6a-cai");
-    let webpage_canister_id = "ryjl3-tyaaa-aaaaa-aaaba-cai";
+    // let webpage_canister_id = "ryjl3-tyaaa-aaaaa-aaaba-cai"; // Local
+    let webpage_canister_id = "6pabh-miaaa-aaaap-qa5nq-cai"; // Network
     let Webpage : actor { 
         update_page_title : ({title: Text}) -> async Text;
         update_page_content : ({content: Text}) -> async Text;
@@ -259,7 +260,7 @@ shared ({ caller = creator }) actor class DAO(init : ?Types.BasicDaoStableStorag
         Debug.print("deduct_proposal_submission_deposit from caller. Current balance: " # debug_show (caller_tokens));
 
         switch (caller_tokens) {
-            case null { #err "Caller needs an account to submit a proposal" };
+            case null { #err "Caller needs an account and have staked MBT to submit a proposal" };
             case (?staked_balance) {
                 Debug.print("deduct_proposal_submission_deposit -> staked_balance: " # debug_show (staked_balance));
                 let threshold = system_params.proposal_submission_deposit.amount_e8s;
@@ -423,7 +424,7 @@ shared ({ caller = creator }) actor class DAO(init : ?Types.BasicDaoStableStorag
 
                 switch (account_get(caller)) {
                     case null {
-                        let message = "The caller with principal '" # debug_show (caller) # "' does not have any tokens to vote with.";
+                        let message = "The caller with principal '" # debug_show (caller) # "' does not have any staked tokens to vote with.";
                         Debug.print(message);
                         return #err(message)
                     };
@@ -525,7 +526,7 @@ shared ({ caller = creator }) actor class DAO(init : ?Types.BasicDaoStableStorag
         accounts := Types.accounts_fromArray(switch (bootstrap) { case null { null }; case (?i) { ?i } })
     };
 
-    // dfx canister call dao bootstrap_proposals '(opt vec {record {id=1; votes_no=record {amount_e8s=0}; voters=opt record {principal "jxic7-kzwkr-4kcyk-2yql7-uqsrg-lvrzb-k7avx-e4nbh-nfmli-rddvs-mqe"; null}; state=variant {open}; timestamp=1674287003083988472; proposer=principal "bi3lr-cwsga-wc4qg-ypqug-mkn4l-2l436-yxpkm-dozec-ah3nq-qmjqo-lae"; votes_yes=record {amount_e8s=10000}; payload=record {canister_message=vec {85; 112; 100; 97; 116; 101; 100; 32; 112; 97; 103; 101; 32; 116; 105; 116; 108; 101}; canister_id=principal "ryjl3-tyaaa-aaaaa-aaaba-cai"; proposal_summary="Update page_title to "Updated page title""; canister_method="update_page_title"}}})'
+    // dfx canister call dao bootstrap_proposals '(opt vec {record {id=1; votes_no=record {amount_e8s=0}; voters=opt record {principal "jxic7-kzwkr-4kcyk-2yql7-uqsrg-lvrzb-k7avx-e4nbh-nfmli-rddvs-mqe"; null}; state=variant {open}; timestamp=1674287003083988472; proposer=principal "bi3lr-cwsga-wc4qg-ypqug-mkn4l-2l436-yxpkm-dozec-ah3nq-qmjqo-lae"; votes_yes=record {amount_e8s=10000}; payload=record {canister_message=vec {85; 112; 100; 97; 116; 101; 100; 32; 112; 97; 103; 101; 32; 116; 105; 116; 108; 101}; canister_id=principal "6pabh-miaaa-aaaap-qa5nq-cai"; proposal_summary="Update page_title to "Updated page title""; canister_method="update_page_title"}}})'
     public func bootstrap_proposals(bootstrap : ?[Types.Proposal]) : async () {
         proposals := Types.proposals_fromArray(switch (init) { case null { null }; case (?i) { ?i.proposals } })
     };
