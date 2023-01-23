@@ -1,39 +1,20 @@
 <script>
-  import Proposal from "./Proposal.svelte"
   import { get } from "svelte/store"
+  import Proposal from "./Proposal.svelte"
   import { daoActor, principal } from "../stores"
   import dfinityLogo from "../assets/dfinity.svg"
+  import { getAllProposals } from "../lib.js"
 
-  /**
-   * Get all the proposals
-   */
-  async function get_all_proposals() {
-    let dao = get(daoActor)
-
-    if (!dao) {
-      return
-    }
-
-    let res;
-    console.log("get_all_proposals");
-
-    try {
-      res = await dao.get_all_proposals()
-    } catch (error) {
-      console.log("Error getting all proposals", error);
-      throw new Error(error)
-    }
-
-    console.log("Proposals", res)
-    return res
-  }
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+  //  REGION:    PROPOSALS     RELATED     ----------   ----------   ----------   ----------   ----------
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
   
-  let promise = get_all_proposals()
+  let allProposalsPromise = getAllProposals(get(daoActor))
 </script>
 
 <div class="view-proposal">
   {#if $principal}
-    {#await promise}
+    {#await allProposalsPromise}
       <p>Loading...</p>
     {:then proposals}
       {(console.log("proposals: ", proposals), '')}

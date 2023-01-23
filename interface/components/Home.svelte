@@ -1,16 +1,8 @@
 <script>
+  import { Principal } from "@dfinity/principal";
   import { onMount, beforeUpdate, afterUpdate } from "svelte"
-  import {
-    isAuthenticated,
-    accountId,
-    principal,
-    authSessionData,
-    daoActor,
-    webpageActor,
-  } from "../stores"
-  import { decodeUtf8 } from "../lib.js"
-  import { proposalToVote } from "../stores.js"
-  import { hasVoted } from "../stores.js"
+  import {isAuthenticated, accountId, principal, authSessionData, daoActor, webpageActor, daoCanisterId} from "../stores"
+  import { decodeUtf8, getSystemParams, getFormattedToken, getStakedTokens } from "../lib.js"
   import mot from "../assets/mot.png"
   import dfinityLogo from "../assets/dfinity.svg"
   import { get } from "svelte/store"
@@ -19,80 +11,112 @@
     idlFactory,
   } from "../../src/declarations/webpage"
 
-  let chosenProposal = ""
-  let chosenVote = ""
-  let voteId = ""
-  let id = ""
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+  //  REGION:   DEFINITIONS   ----------   ----------   ----------   ----------   ----------   ----------
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+
+  let tokensToStake = ""
   let usingInsecureWebpageAgent = true
 
-  async function vote(thisID, votePayload) {
+  let stakingDurationOptions = [
+    { id: 6, text: `6 Months` },
+    { id: 12, text: `1 Year` },
+    { id: 24, text: `2 Years` },
+    { id: 4, text: `4 Years` },
+    { id: 6, text: `6 Years` },
+    { id: 8, text: `8 Years` },
+  ];
+  let durationToStake
+  let stakeTokensPromise
+
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+  //  REGION:     STAKING     ----------   ----------   ----------   ----------   ----------   ----------
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+
+  // Grab the staken tokens payload
+  let getStakedTokensPromise = getStakedTokens(get(daoActor))
+
+  /**
+   * Click event handler for stacking tokens
+   * @param {number} stakedTokensAmount Staking amount, in integer
+   * @param {number} chosenStakingDuration Staking duration, in months
+   */
+  function stakeTokens(stakedTokensAmount, chosenStakingDuration) {
+    console.log("EVENT --- stakeTokens", stakedTokensAmount, chosenStakingDuration)
+
+    if (stakedTokensAmount > 0 && chosenStakingDuration >= 6) {
+      stakeTokensPromise = handleStakeTokens(stakedTokensAmount, chosenStakingDuration)
+    }
+  }
+
+  /**
+   * Call the DAO and stake the tokens.
+   * @param {number} stakedTokensAmount Staking amount, in integer
+   * @param {number} chosenStakingDuration Staking duration, in months
+   */
+  async function handleStakeTokens(stakedTokensAmount, chosenStakingDuration) {
+    console.log("EVENT --- handleStakeTokens", stakedTokensAmount, chosenStakingDuration)
     let dao = get(daoActor)
-    let res
+    let response
 
     if (!dao) {
       return
     }
 
-    await dao.vote(BigInt(thisID), votePayload)
-    .then(response => {
-      if (response.Ok) {
-        return response.Ok
-      } else {
-        throw new Error(rresponsees.Err)
-      }
-    }).catch(error => {
-      console.log("Error voting", thisID, votePayload, error);
-      throw new Error(error)
+    // Prepare the payload for the DAO call.
+    let payload = (idlFactory.Record = {
+      amount: (idlFactory.Record = {
+        amount_e8s: stakedTokensAmount
+      }),
+      duration: chosenStakingDuration
     })
 
-    /*try {
-      res = await dao.vote(BigInt(thisID), votePayload)
-    } catch (error) {
-      console.log("Error voting", thisID, votePayload, error);
-      throw new Error(error)
-    }
-
-    if (res.Ok) {
-      return res.Ok
-    } else {
-      throw new Error(res.Err)
-    }*/
-  }
-
-  async function get_proposal(thisID) {
-    let dao = get(daoActor)
-
-    if (!dao) {
-      return
-    }
-
-    let res;
-
     try {
-      res = await dao.get_proposal(BigInt(thisID))
+      // Fetch the response and handle it in async fashion so we don't get the promise errors in console.
+      response = await dao
+      .stake(payload)
+      .then((response) => {
+        if (response.ok) {
+          return response.ok
+        } else {
+          throw new Error(response.err)
+        }
+      })
+      .catch((error) => {
+        console.log("Error staking (1) - ", payload, error)
+        throw new Error(error)
+      })
     } catch (error) {
-      console.log("Error getting proposal", thisID, error);
+      // Catch-all in case something else goes wrong.
+      console.log("Error staking (2) - ", thisID, error)
       throw new Error(error)
     }
 
-    if (res.length !== 0) {
-      return res[0]
-    } else {
-      throw new Error(
-        "Could not find this proposal, make sure you typed in the right ID",
-      )
-    }
+    return response
   }
 
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+  //  REGION:      GETTING    MODIFIABLE      DATA      ----------   ----------   ----------   ----------
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+
+  let getSystemParamsPromise = getSystemParams($daoActor);
+  let getWebpageContentsPromise = get_webpage("/", "GET");
+
+  /**
+   * Get the current webpage contents, so we can display these nicely on the homepage, and allow the users to see the current content.
+   * @param {string} url The URL to fetch, e.g. "/"
+   * @param {string} method The method to invoke, e.g. "GET"
+   */
   async function get_webpage(url, method) {
     let webpage = get(webpageActor)
+    let response;
 
     if (!$isAuthenticated || !webpage) {
       usingInsecureWebpageAgent = true
       webpage = insecureWebActor
-      console.log("Could not use secure webpage agent")
+      // console.log("Could not use secure webpage agent")
     } else {
-      console.log("Using secure webpage agent")
+      // console.log("Using secure webpage agent")
       usingInsecureWebpageAgent = false
     }
 
@@ -109,178 +133,164 @@
       body: body,
       headers: headers,
     })
-    console.log("httpRequest payload prepared.", httpRequest);
+    // console.log("httpRequest payload prepared.", httpRequest)
 
-    let res = await webpage.http_request(httpRequest)
-    // console.log(typeof res === undefined, res.status_code, decodeUtf8(res.body), res)
-
-    if (typeof res !== undefined && res.status_code === 200) {
-      return decodeUtf8(res.body)
-    } else {
-      throw new Error("Could not load webpage contents.")
+    try {
+      response = await webpage.http_request(httpRequest)
+      .then((res) => {
+        // console.log(typeof res === undefined, res.status_code, decodeUtf8(res.body), res)
+        if (typeof res !== undefined && res.status_code === 200) {
+          return decodeUtf8(res.body)
+        } else {
+          throw new Error("Could not load webpage contents.")
+        }
+      })
+      .catch((error) => {
+        console.log("Error getting webpage contents - ", httpRequest, error)
+        throw new Error(error)
+      })
+    } catch (error) {
+      console.log("Error getting response from webpage contents - ", httpRequest, error)
+      throw new Error(error)
     }
+
+    return response;
   }
 
-  // let votePromise = vote(voteId, chosenVote)
-  // let getProposalPromise = get_proposal(id)
-  let votePromise
-  let getProposalPromise
-  let getWebpageContentsPromise = get_webpage("/", "GET")
-
-  function handleVoteClick(payload) {
-    console.log("EVENT --- handleVoteClick", payload)
-    chosenVote = payload
-    voteId = id
-    votePromise = vote(voteId, chosenVote)
-    $hasVoted = true
-  }
-
-  function handleProposalCheck(payload) {
-    console.log("EVENT --- handleProposalCheck", payload)
-    id = payload
-    getProposalPromise = get_proposal(id)
-  }
-
-  //I assume the vote Yes/No will be represented as True/False
-  function setProposal(x) {
-    console.log("EVENT --- setProposal", x)
-    $proposalToVote.proposalID = x
-
-    if (x != "null") {
-      handleProposalCheck(x)
-    }
-  }
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+  //  REGION:      SVELTE      LIFECYCLE      HOOKS     ----------   ----------   ----------   ----------
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
 
   onMount(async () => {
-    console.log("Home -> onMount");
-	});
+    // console.log("Home -> onMount")
+  })
 
   beforeUpdate(() => {
-		console.log("Home -> beforeUpdate - isAuthenticated", $isAuthenticated);
-	});
+    // console.log("Home -> beforeUpdate - isAuthenticated", $isAuthenticated)
+    // Grab the staken tokens payload
+    getSystemParamsPromise = getSystemParams(get(daoActor));
+    getStakedTokensPromise = getStakedTokens(get(daoActor))
+  })
 
-	afterUpdate(() => {
-		console.log("Home -> afterUpdate - isAuthenticated", $isAuthenticated);
-	});
+  afterUpdate(() => {
+    // console.log("Home -> afterUpdate - isAuthenticated", $isAuthenticated)
+  })
 </script>
 
-<div class="votemain">
+<div class="home-main">
+  {#if $isAuthenticated}
+    <!-- Render the system parameters. -->
+    {#await getSystemParamsPromise}
+      <h3 class="slogan">Loading...</h3>
+    {:then systemParams}
+      {#if systemParams}
+        <div class="params-container">
+          <ul class="inline">
+            <li>
+              <span>Transfer Fee</span>
+              <pre><code>{getFormattedToken(systemParams.transfer_fee.amount_e8s)}</code></pre>
+            </li>
+            <li>
+              <span>Proposal Submission Deposit</span>
+              <pre><code>{getFormattedToken(systemParams.proposal_submission_deposit.amount_e8s)}</code></pre>
+            </li>
+            <li>
+              <span>Proposal Vote Threshold</span>
+              <pre><code>{getFormattedToken(systemParams.proposal_vote_threshold.amount_e8s)}</code></pre>
+            </li>
+          </ul>
+        </div>
+      {/if}
+    {:catch error}
+      <p style="color: red">System parameters couldn't be loaded.</p>
+    {/await}
+  {/if}
+
+  <!-- Render the webpage contents that we want to change via proposals. -->
   {#await getWebpageContentsPromise}
-    <h1 class="slogan">Loading...</h1>
-  {:then res3}
-    <div class="webpage">
+    <h3 class="slogan">Loading...</h3>
+  {:then webpageContents}
+    <div class="params-container">
       <h3>
-        Current Webpage Contents ({usingInsecureWebpageAgent
-          ? "From Insecure Actor"
-          : "From Secure Actor"})
+        Current Webpage Contents ({usingInsecureWebpageAgent ? "From Insecure Actor" : "From Secure Actor"})
       </h3>
-      {res3}
+      {webpageContents}
     </div>
   {:catch error}
     <p style="color: red">{error.message}</p>
   {/await}
 
+  <!-- Render the staking UI. -->
   {#if $isAuthenticated}
-    <img src={mot} class="bg" alt="logo" />
-    {#if $proposalToVote.proposalID === "null"}
-      <h1 class="slogan">Please input a proposal ID!</h1>
-      <input
-        bind:value={chosenProposal}
-        placeholder="Input your proposal ID here"
-      />
-      <button on:click={setProposal(chosenProposal)}>Vote!</button>
-    {:else if $proposalToVote.proposalID != "null"}
-      {#await getProposalPromise}
-        <h1 class="slogan">Loading...</h1>
-      {:then res}
-        <div class="votingdiv">
-          <h1 class="slogan">
-            You are voting on proposal ID: {$proposalToVote.proposalID}
-          </h1>
-          <div>
-            <h1 class="slogan">Cast your vote:</h1>
-            <button on:click={() => handleVoteClick(true)}>Yes</button>
-            <button on:click={() => handleVoteClick(false)}>No</button>
-            {#if $hasVoted === true}
-              {#await votePromise}
-                <h1 class="slogan">Loading...</h1>
-              {:then res2}
-                <p style="color: white">
-                  Voted successfully! Current votes: {res2}
-                </p>
-              {:catch error}
-                <p style="color: red">{error.message}</p>
-              {/await}
-            {/if}
-          </div>
-          <button on:click={() => setProposal("null")}
-            >Choose new proposal</button
-          >
+    <!-- User has authenticated with a wallet app. -->
+    <!-- <img src={mot} class="bg" alt="logo" /> -->
+    <h1 class="slogan">Your Staked MBT Tokens</h1>
+    {#await getStakedTokensPromise}
+      <h3 class="slogan">Loading...</h3>
+    {:then stakedTokens}
+      {#if stakedTokens}
+        <div class="params-container">
+          <ul class="inline">
+            <li>
+              <span>Total Staked</span>
+              <pre><code>{getFormattedToken(stakedTokens.balance.amount_e8s)}</code></pre>
+            </li>
+            <li>
+              <span># Neurons</span>
+              <pre><code>{stakedTokens.neurons.length}</code></pre>
+            </li>
+            <!--<li>
+              <span>Details</span>
+              <pre><code>{stakedTokens.message}</code></pre>
+            </li>-->
+          </ul>
         </div>
-      {:catch error}
-        <button on:click={() => setProposal("null")}
-          >Wrong Proposal ID, click here to reset</button
-        >
-        <p style="color: red">{error.message}</p>
-      {/await}
-    {/if}
+      {/if}
+    {:catch error}
+      <p style="color: red">Your staked token details couldn't be loaded.</p>
+    {/await}
+
+    <h1 class="slogan">Stake your MBT Tokens</h1>
+    <p>
+      You must first stake your MBT tokens before you can create and vote on proposals.<br />
+      Please enter the amount you want to stake and the duration you want to stake them for.
+    </p>
+    <div class="form-buttons">
+      <input name="tokensToStake" type="number" bind:value={tokensToStake} placeholder="Tokens to stake"/>
+      <select name="durationToStake" bind:value={durationToStake}>
+        {#each stakingDurationOptions as option}
+          <option value={option.id}>
+            {option.text}
+          </option>
+        {/each}
+      </select>
+      <button on:click={stakeTokens(tokensToStake, durationToStake)}>Stake {tokensToStake} MBT Tokens!</button>
+    </div>
+    
+    {#await stakeTokensPromise}
+      <p style="color: white">...waiting</p>
+    {:then stakeTokensResponse}
+      {#if stakeTokensResponse}
+        <p style="color: white">Your tokens have been successfully staked.</p>
+      {/if}
+    {:catch error}
+      <p style="color: red">
+        Your tokens could not be staked.<br />
+        {error.message}
+      </p>
+    {/await}
   {:else}
+    <!-- User has not authenticated with a wallet app. -->
     <img src={dfinityLogo} class="App-logo" alt="logo" />
-    <p class="example-disabled">Connect with a wallet to access this example</p>
+    <p class="example-disabled">You must be authenticated before you can interact with this app. Please connect with a wallet.</p>
   {/if}
 </div>
 
 <style>
-  .webpage {
-    background: white;
-    color: black;
-    border: 1px solid black;
-    padding: 20px;
-    margin: 20px auto;
-    display: block;
-  }
-  input {
-    width: 100%;
-    padding: 12px 20px;
-    margin: 8px 0;
-    display: inline-block;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
-
-  .bg {
-    height: 55vmin;
-    animation: pulse 3s infinite;
-  }
-
-  .votingdiv {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 5vmin;
-  }
-
-  .votemain {
+  .home-main {
     display: flex;
     flex-direction: column;
     justify-content: center;
-  }
-
-  button {
-    background-color: #4caf50;
-    border: none;
     color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-  }
-
-  .delete {
-    background-color: white;
   }
 </style>

@@ -5,36 +5,26 @@
   import mot from "../assets/mot.png"
   import dfinityLogo from "../assets/dfinity.svg"
   import { get } from "svelte/store"
-  import { daoActor, principal } from "../stores"
+  import { daoActor, principal, daoCanisterId, webpageCanisterId, voteTokens, proposalVoteThreshold } from "../stores"
+  import { decodeUtf8, getFormattedToken, getAllProposals } from "../lib.js"
+  import { idlFactory } from "../../src/declarations/dao"
+
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+  //  REGION:   DEFINITIONS   ----------   ----------   ----------   ----------   ----------   ----------
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
 
   let chosenProposal = ""
-  let chosenVote = ""
-  let voteId = ""
-  let id = ""
+  // let chosenVote = ""
+  // let voteId = ""
+  // let id = ""
 
-  async function vote(thisID, votePayload) {
-    let dao = get(daoActor)
-    let res
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+  //  REGION:    PROPOSALS     RELATED     ----------   ----------   ----------   ----------   ----------
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
 
-    if (!dao) {
-      return
-    }
+  let allProposalsPromise = getAllProposals(get(daoActor));
 
-    await dao
-      .vote(BigInt(thisID), votePayload)
-      .then((response) => {
-        if (response.Ok) {
-          return response.Ok
-        } else {
-          throw new Error(rresponsees.Err)
-        }
-      })
-      .catch((error) => {
-        console.log("Error voting", thisID, votePayload, error)
-        throw new Error(error)
-      })
-  }
-
+  /*let getProposalPromise
   async function get_proposal(thisID) {
     let dao = get(daoActor)
 
@@ -60,17 +50,6 @@
     }
   }
 
-  let votePromise
-  let getProposalPromise
-
-  function handleVoteClick(payload) {
-    console.log("EVENT --- handleVoteClick", payload)
-    chosenVote = payload
-    voteId = id
-    votePromise = vote(voteId, chosenVote)
-    $hasVoted = true
-  }
-
   function handleProposalCheck(payload) {
     console.log("EVENT --- handleProposalCheck", payload)
     id = payload
@@ -85,41 +64,146 @@
     if (x != "null") {
       handleProposalCheck(x)
     }
+  }*/
+
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+  //  REGION:       VOTES      RELATED     ----------   ----------   ----------   ----------   ----------
+  //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
+
+  async function vote(proposalID, votePayload) {
+    let dao = get(daoActor)
+    let res
+
+    if (!dao) {
+      return
+    }
+
+    // Thans Ori for describing how to pass in variants from the JS front-end.
+    // Ref: https://forum.dfinity.org/t/can-i-call-a-canister-function-that-have-a-variant-as-a-parameter-how/6745/3
+    let voteVariant = votePayload ? { yes: null } : { no: null }
+    let payload = (idlFactory.Record = {
+      vote: voteVariant,
+      proposal_id: proposalID
+    })
+
+    await dao
+      .vote(payload)
+      .then((response) => {
+        if (response.ok) {
+          return response.ok
+        } else {
+          throw new Error(response.err)
+        }
+      })
+      .catch((error) => {
+        console.log("Error voting - ", proposalID, votePayload, error)
+        throw new Error(error)
+      })
+  }
+
+  let votePromise
+
+  function handleVoteClick(votePayload) {
+    console.log("EVENT --- handleVoteClick - vote: ", votePayload, ", chosenProposal: ", chosenProposal)
+    votePromise = vote(chosenProposal, votePayload)
+    $hasVoted = true
   }
 
   onMount(async () => {
-    console.log("Vote -> onMount")
+    // console.log("Vote -> onMount")
+    allProposalsPromise = getAllProposals(get(daoActor));
+    // console.log("Vote - allProposalsPromise - ", allProposalsPromise);
+    // console.log("proposalOptions - ", proposalOptions);
   })
 
   beforeUpdate(() => {
-    console.log("Vote -> beforeUpdate")
+    // console.log("Vote -> beforeUpdate")
   })
 
   afterUpdate(() => {
-    console.log("Vote -> afterUpdate")
+    // console.log("Vote -> afterUpdate")
   })
 </script>
 
 <div class="votemain">
   {#if $principal}
-    <img src={mot} class="bg" alt="logo" />
-    {#if $proposalToVote.proposalID === "null"}
+    {#if !Number.isInteger(chosenProposal)}
+      <img src={mot} class="bg" alt="logo" />
+    {/if}
+    {#await allProposalsPromise}
+      <h2 class="slogan">Loading...</h2>
+    {:then proposalOptions}
+      { (console.log("Vote - proposal options within view block: ", proposalOptions), '') }
+      <h1 class="slogan">Please select a proposal!</h1>
+      <div class="form-buttons">
+        <select name="chosenProposal" bind:value={chosenProposal} on:change={() => hasVoted.set(false)} style="display:100%"> <!-- on:change={() => setProposal(chosenProposal)} -->
+          {#each proposalOptions as option}
+            <option value={Number.parseInt(option.id)}>
+              [{option.id}]
+              { (option.payload.canister_id === daoCanisterId ? " [DAO Canister] " : " [Webpage Canister] ") }
+              [{ option.payload.canister_method }]
+              {option.payload.proposal_summary}
+            </option>
+          {/each}
+        </select>
+      </div>
+      { (console.log("Vote - chosen proposal within view block: ", chosenProposal), '') }
+
+      {#if Number.isInteger(chosenProposal)}
+        <div class="post-preview">
+          <h2>[{proposalOptions[chosenProposal].id}] {proposalOptions[chosenProposal].payload.proposal_summary}</h2>
+          <p>Created: {new Date(Number.parseInt(proposalOptions[chosenProposal].timestamp / BigInt(1000000)))}</p>
+          <p>State: {Object.keys(proposalOptions[chosenProposal].state)[0]}</p>
+          <p>Proposer: {proposalOptions[chosenProposal].proposer.toString()}</p>
+      
+          <h2>Payload Details</h2>
+          <p>Canister ID: {proposalOptions[chosenProposal].payload.canister_id}</p>
+          <p>Canister Method: {proposalOptions[chosenProposal].payload.canister_method}</p>
+          <p>Canister Message: {decodeUtf8(proposalOptions[chosenProposal].payload.canister_message)}</p>
+      
+          <h2>Vote Statistics</h2>
+          <p>
+            Yes: {getFormattedToken(BigInt(proposalOptions[chosenProposal].votes_yes.amount_e8s / BigInt(100000000)))}, 
+            No: {getFormattedToken(BigInt(proposalOptions[chosenProposal].votes_no.amount_e8s / BigInt(100000000)))}
+          </p>
+          <p>Vote Pass Threshold: {getFormattedToken($proposalVoteThreshold)}</p>
+          <p>Voting requires you to have {getFormattedToken($voteTokens)} staked with the DAO.</p>
+
+          <div class="form-buttons">
+            <button class="vote-button" on:click={() => handleVoteClick(true)}>Yes</button>
+            <button class="vote-button" on:click={() => handleVoteClick(false)}>No</button>
+          </div>
+
+          {#if $hasVoted === true}
+            {#await votePromise}
+              <h1 class="slogan black">Loading...</h1>
+            {:then voteResult}
+              <h3 class="slogan" style="color: black;">
+                Voted successfully! {voteResult}
+              </h3>
+            {:catch error}
+              { (($hasVoted = false), '') }
+              <p style="color: red">{error.message}</p>
+            {/await}
+          {/if}
+          
+        </div>
+      {/if}
+    {:catch error}
       <h1 class="slogan">Please input a proposal ID!</h1>
-      <input
-        bind:value={chosenProposal}
-        placeholder="Input your proposal ID here"
-      />
-      <button on:click={setProposal(chosenProposal)}>Vote!</button>
-    {:else if $proposalToVote.proposalID != "null"}
+      <input bind:value={chosenProposal} placeholder="Input your proposal ID"/>
+      <!-- <button on:click={setProposal(chosenProposal)}>Vote!</button> -->
+    {/await}
+
+    <!-- {#if $proposalToVote.proposalID != "null"}
       {#await getProposalPromise}
-        <h1 class="slogan">Loading...</h1>
+        <h2 class="slogan">Loading...</h2>
       {:then res}
         <div class="votingdiv">
-          <h1 class="slogan">
-            You are voting on proposal ID: {$proposalToVote.proposalID}
-          </h1>
-          <div>
-            <h1 class="slogan">Cast your vote:</h1>
+          <h3 class="slogan">
+            Cast your vote on proposal ID: {$proposalToVote.proposalID}
+          </h3>
+          <div class="form-buttons">
             <button on:click={() => handleVoteClick(true)}>Yes</button>
             <button on:click={() => handleVoteClick(false)}>No</button>
             {#if $hasVoted === true}
@@ -144,7 +228,7 @@
         >
         <p style="color: red">{error.message}</p>
       {/await}
-    {/if}
+    {/if} -->
   {:else}
     <img src={dfinityLogo} class="App-logo" alt="logo" />
     <p class="example-disabled">Connect with a wallet to access this example</p>
@@ -152,6 +236,13 @@
 </div>
 
 <style>
+  .post-preview {
+    background-color: wheat;
+    border: 1px solid white;
+    border-radius: 10px;
+    margin-bottom: 2vmin;
+    padding: 2vmin;
+  }
   input {
     width: 100%;
     padding: 12px 20px;
@@ -165,12 +256,6 @@
   .bg {
     height: 55vmin;
     animation: pulse 3s infinite;
-  }
-  .votingdiv {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 5vmin;
   }
 
   .votemain {
@@ -190,5 +275,9 @@
     font-size: 16px;
     margin: 4px 2px;
     cursor: pointer;
+  }
+  .vote-button:hover {
+    transform: scale(1.15);
+    transition: all 0.4s;
   }
 </style>

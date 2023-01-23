@@ -1,26 +1,25 @@
 import { get } from "svelte/store"
-import { isAuthenticated, accountId, principal, principalId, authSessionData, daoActor, webpageActor } from "./stores"
+import { isAuthenticated, accountId, principal, principalId, authSessionData, mbtTokens, daoActor, webpageActor, daoCanisterId, webpageCanisterId, HOST } from "./stores"
+import { transferFee, proposalVoteThreshold, proposalSubmissionDeposit } from "./stores"
+import { getSystemParams } from "./lib"
 import { idlFactory as idlFactoryDAO } from "../src/declarations/dao/dao.did.js"
 import { idlFactory as idlFactoryWeb } from "../src/declarations/webpage/webpage.did.js"
 import { Actor, HttpAgent } from "@dfinity/agent";
 import { AuthClient } from '@dfinity/auth-client';
 
 //region Plug Wallet Auth
-//TODO : Add mainnet canister ids when deployed on the IC
-const daoCanisterId = process.env.NODE_ENV === "development" ? "rrkah-fqaaa-aaaaa-aaaaq-cai" : "rvpd5-iqaaa-aaaaj-qazsa-cai"
-const webpageCanisterId = process.env.NODE_ENV === "development" ? "ryjl3-tyaaa-aaaaa-aaaba-cai" : "rvpd5-iqaaa-aaaaj-qazsa-cai"
-const HOST = process.env.NODE_ENV === "development" ? "http://localhost:3000/" : "https://ic0.app";
 const whitelist = [daoCanisterId, webpageCanisterId];
 
 // export const isLoggedIn = await window.ic.plug.isConnected();
 
 export const verifyConnectionAndAgent = async () => {
+  console.log("Checking connection status with wallet...");
   const connected = await window.ic.plug.isConnected();
 
   if (!connected) await login();
 
   if (connected && !window.ic.plug.agent) {
-    console.log("Connected but no agent found. Creating agent for host: ", HOST);
+    console.log("Connected - ", connected, " - but no agent found. Creating agent for host: ", HOST);
     window.ic.plug.createAgent({ whitelist, HOST })
   }
 };
@@ -33,7 +32,11 @@ const onConnectionUpdate = () => {
 // See https://docs.plugwallet.ooo/
 // https://github.com/Psychedelic/plug-inpage-provider/blob/develop/src/Provider/index.ts
 export async function balance(symbol) {
-  console.log("Attempting to get balance:", principal)
+  if (!get(principalId)) {
+    return 0;
+  }
+
+  console.log("Attempting to get balance:", get(principalId))
   // (3) [{…}, {…}, {…}]
   // 0:  {symbol: 'ICP', canisterId: 'ryjl3-tyaaa-aaaaa-aaaba-cai', name: 'ICP', decimals: 8, standard: 'ROSETTA', …}
   // 1: {symbol: 'XTC', canisterId: 'aanaa-xaaaa-aaaah-aaeiq-cai', name: 'Cycles', decimals: 12, standard: 'XTC', …}
@@ -62,7 +65,7 @@ export async function balance(symbol) {
 }
 
 export async function logout() {
-  console.log("Attempting to logout:", principal)
+  console.log("Attempting to logout:", get(principal))
   await window.ic.plug.disconnect();
 }
 
@@ -115,6 +118,11 @@ export async function login() {
   webpageActor.update(() => webpage)
   console.log("Stores set.", "isAuthenticated", get(isAuthenticated), "accountId", get(accountId), "principal", get(principal), "principalId", get(principalId));
   console.log("authSessionData", get(authSessionData));
+
+  let systemParams = await getSystemParams(dao);
+  transferFee.update(() => systemParams.transfer_fee.amount_e8s);
+  proposalVoteThreshold.update(() => systemParams.proposal_vote_threshold.amount_e8s);
+  proposalSubmissionDeposit.update(() => systemParams.proposal_submission_deposit.amount_e8s);
 }
 
 // access session principalId

@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "vite",
     "create": "dfx canister create --all",
-    "backend": "dfx build --all && dfx generate ledger && dfx generate webpage && dfx generate dao",
+    "backend": "dfx build --all && dfx generate webpage && dfx generate dao",
     "deploy": "dfx deploy -y",
     "build": "vite build",
     "serve": "vite preview"

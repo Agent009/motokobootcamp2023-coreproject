@@ -1,4 +1,5 @@
 import CertifiedData "mo:base/CertifiedData";
+import Cycles "mo:base/ExperimentalCycles";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Array "mo:base/Array";
@@ -8,6 +9,7 @@ import Prelude "mo:base/Prelude";
 import Bool "mo:base/Bool";
 import Iter "mo:base/Iter";
 import Debug "mo:base/Debug";
+import Result "mo:base/Result";
 import HTTP "./lib/HTTP";
 import { encodeUtf8; decodeUtf8; decodeRequestBody } "./lib/Helper";
 
@@ -21,6 +23,10 @@ shared ({ caller = creator }) actor class Webpage() = {
     public type StreamingCallbackResponse = HTTP.StreamingCallbackResponse;
     public type StreamingCallbackToken = HTTP.StreamingCallbackToken;
     type HeaderField = HTTP.HeaderField;
+    type CertifiedCounter = {
+        certificate : ?Blob;
+        value : Nat;
+    };
 
     //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
     //  REGION:    VARIABLES    ----------   ----------   ----------   ----------   ----------   ----------
@@ -295,6 +301,30 @@ shared ({ caller = creator }) actor class Webpage() = {
         "Hello, admin!";
     };
 
+    // Get the cycles balance
+    public query func cycle_balance() : async Nat {
+        let balance = Cycles.balance();
+        Debug.print("Cycles balance: " # debug_show(balance));
+        return balance;
+    };
+
+    // Receive cycles
+    public shared ({ caller }) func receive_cycles() : async Result.Result<Text, Text> {
+        let cycles = Cycles.available();
+        Debug.print("Received and accepted cycles: " # debug_show(cycles));
+        ignore Cycles.accept(cycles);
+        return #ok("Thanks!.")
+    };
+
+    public shared ({ caller }) func send_cycles (principalID : Text) : async Result.Result<Text, Text> {
+        Debug.print("Current balance: " # Nat.toText(Cycles.balance()));
+        let recipient : actor {  receive_cycles : () -> async Result.Result<Text, Text>; } = actor(principalID);
+        Cycles.add(1_000_000_100);
+        let send = await recipient.receive_cycles();
+        Debug.print("Unused balance: " # Nat.toText(Cycles.refunded()));
+        send
+    };
+
     //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
     //  REGION:      HELPERS    ----------   ----------   ----------   ----------   ----------   ----------
     //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
@@ -308,12 +338,22 @@ shared ({ caller = creator }) actor class Webpage() = {
     //----------   ----------   ----------   ----------   ----------   ----------   ----------   ----------
 
     // dfx canister call webpage increment
-    public func increment() : async () {
-        counter += 1
+    public func increment() : async Nat {
+        counter += 1;
+
+        let blob_temp : Blob = Text.encodeUtf8(Nat.toText(counter));
+        CertifiedData.set(blob_temp);
+
+        return counter;
     };
 
     // dfx canister call webpage getCounterValue
-    public query func getCounterValue() : async Nat {
-        counter
+    public shared query func getCounterValue() : async CertifiedCounter {
+        let validation : CertifiedCounter = {
+            certificate = CertifiedData.getCertificate();
+            value = counter;
+        };
+
+        return validation;
     }
 }

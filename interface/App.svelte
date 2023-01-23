@@ -25,11 +25,11 @@
 	});*/
 
   beforeUpdate(() => {
-    console.log("App -> beforeUpdate - isAuthenticated", $isAuthenticated)
+    // console.log("App -> beforeUpdate - isAuthenticated", $isAuthenticated)
   })
 
   afterUpdate(() => {
-    console.log("App -> afterUpdate - isAuthenticated", $isAuthenticated)
+    // console.log("App -> afterUpdate - isAuthenticated", $isAuthenticated)
   })
 </script>
 
@@ -83,14 +83,82 @@
     display: flex;
     justify-content: space-between;
   }
+  .params-container {
+    background: white;
+    color: black;
+    border: 1px solid black;
+    padding: 20px;
+    margin: 20px auto;
+    display: block;
+  }
+  .params-heading {
+    color: wheat;
+  }
+  .form-buttons {
+    display:flex;
+    flex-direction: row;
+    justify-content: space-around;
+  }
   button {
     font-weight: 600;
     background-color: #4c4a4a;
+  }
+  input {
+    width: 50%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  button {
+    background-color: #4caf50;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
   }
   .slogan {
     font-size: 1.7em;
     margin-bottom: 0;
     color: #ffffff;
+    text-align:center;
+  }
+  .black {color: black;}
+  .wheat {color: wheat;}
+  ul.inline {
+    list-style: none;
+    padding: 5px;
+    margin: 1px;
+  }
+  ul.inline li {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: space-evenly;
+  }
+  ul.inline li span {
+    display: inline-block;
+    margin: auto 15px;
+  }
+  select {
+    padding: 10px;
+    margin: 2px auto;
+  }
+  select:first-child {
+    margin-right: 10px;
+  }
+  select:last-child {
+    margin-left: 10px;
   }
   .twitter {
     font-size: 0.4em;

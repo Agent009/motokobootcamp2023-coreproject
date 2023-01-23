@@ -5,7 +5,7 @@
   
   <div class="post-preview">
     <h2>[{post.id}] {post.payload.proposal_summary}</h2>
-    <p>Created: {new Date(Number.parseInt(post.timestamp / 1000000n))}</p>
+    <p>Created: {new Date(Number.parseInt(post.timestamp / BigInt(1000000)))}</p>
     <p>State: {Object.keys(post.state)[0]}</p>
     <p>Proposer: {post.proposer.toString()}</p>
 
@@ -16,8 +16,8 @@
 
     <h2>Vote Statistics</h2>
     <p>
-      Yes: {BigInt(post.votes_yes.amount_e8s / 100000000n).toString()}, 
-      No: {BigInt(post.votes_no.amount_e8s / 100000000n).toString()}
+      Yes: {BigInt(post.votes_yes.amount_e8s / BigInt(100000000)).toString()}, 
+      No: {BigInt(post.votes_no.amount_e8s / BigInt(100000000)).toString()}
     </p>
   </div>
   

@@ -1,10 +1,12 @@
 <script>
   import { onMount, beforeUpdate, afterUpdate } from "svelte"
+  import { get } from "svelte/store"
   import { balance, login, logout, verifyConnectionAndAgent } from "../../auth"
-  import { isAuthenticated, accountId, principalId } from "../../stores"
+  import { isAuthenticated, accountId, principalId, mbtTokens, daoActor } from "../../stores"
+  import { getFormattedToken, getMBTTokens } from "../../lib"
   import ConnectButton from "./ConnectButton.svelte"
 
-  console.log("Header -> isAuthenticated:", $isAuthenticated)
+  // console.log("Header -> isAuthenticated:", $isAuthenticated)
   $: message = $isAuthenticated
     ? "You are connected"
     : "You are not logged in. Please sign in to authenticate yourself."
@@ -20,26 +22,25 @@
     }
   }
 
-  let icpBalance = getBalance("ICP")
+  let icpBalancePromise = getBalance("ICP")
+  // Let's fetch the user's MBT tokens as well while we're at it.
+  let tokensPromise = $isAuthenticated ? getMBTTokens(get(daoActor)) : null;
+  // mbtTokens.update(() => tokens ? tokens : 0)
 
   onMount(async () => {
     console.log("Header -> onMount")
     const res = await verifyConnectionAndAgent()
-    console.log(
-      "Header -> verifyConnectionAndAgent -> res",
-      res,
-      "isAuthenticated",
-      $isAuthenticated,
-    )
+    // console.log("Header -> verifyConnectionAndAgent -> res", res, "isAuthenticated", $isAuthenticated)
   })
 
   beforeUpdate(() => {
     console.log("Header -> beforeUpdate - isAuthenticated", $isAuthenticated)
-    icpBalance = getBalance("ICP")
+    icpBalancePromise = getBalance("ICP");
+    tokensPromise = $isAuthenticated ? getMBTTokens(get(daoActor)) : null;
   })
 
   afterUpdate(() => {
-    console.log("Header -> afterUpdate - isAuthenticated", $isAuthenticated)
+    // console.log("Header -> afterUpdate - isAuthenticated", $isAuthenticated)
   })
 </script>
 
@@ -50,19 +51,22 @@
       <span>&nbsp;</span>
       <pre><code>{message}</code></pre>
     </li>
-    <li>
+    <!-- <li>
       <span>Account ID</span>
       <pre><code>{ourAccountID}</code></pre>
-    </li>
+    </li> -->
     <li>
       <span>Principal ID</span>
       <pre><code>{ourPrincipalID}</code></pre>
     </li>
     <li>
       <span>ICP Balance</span>
-      <pre><code
-          >{#await icpBalance}___{:then icpAmount}{icpAmount}{:catch error}___{/await}</code
-        ></pre>
+      <pre><code>{#await icpBalancePromise}___{:then icpAmount}{(icpAmount) ? icpAmount : "0"}{:catch error}___{/await}</code></pre>
+    </li>
+    <li>
+      <span>MBT Tokens</span>
+      <pre><code>{#await tokensPromise}___{:then tokens}{getFormattedToken(tokens)}{:catch error}___{/await}</code></pre>
+      <!-- <pre><code>{$mbtTokens}</code></pre> -->
     </li>
   </ul>
 </div>
